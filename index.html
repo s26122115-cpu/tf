@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>特級術師作品集入口 | 咒術迴戰風格 Portfolio</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Noto+Sans+TC:wght@500;700;900&family=Orbitron:wght@800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #080911;
+      --card-bg: rgba(14, 16, 28, 0.85);
+      --card-border: rgba(0, 240, 255, 0.3);
+      --jujutsu-blue: #00f0ff;    /* 蒼 - 無下限術式藍 */
+      --jujutsu-red: #ff0055;     /* 赫 - 反轉術式紅 */
+      --jujutsu-purple: #9d00ff;  /* 茈 - 虛式紫 */
+      --black-flash: #ff003c;     /* 黑閃閃電紅 */
+      --text-main: #ffffff;
+      --text-sub: #8d97b8;
+      --locked-bg: rgba(20, 22, 35, 0.5);
+      --locked-border: rgba(255, 255, 255, 0.08);
+      --locked-text: #4a516e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 60px;
+      position: relative;
+      overflow-x: hidden;
+      
+      /* 漫畫黑色網點質感背景 */
+      background-image: 
+        radial-gradient(rgba(0, 240, 255, 0.08) 15%, transparent 16%),
+        radial-gradient(rgba(255, 0, 85, 0.06) 15%, transparent 16%);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at 50% 30%, rgba(157, 0, 255, 0.12), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 頂部《咒術迴戰》英雄 Banner 主視覺區塊 */
+    .jujutsu-banner {
+      width: 100%;
+      height: 320px;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-bottom: 3px solid var(--jujutsu-blue);
+      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.2);
+    }
+
+    .banner-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+      filter: brightness(0.7) contrast(1.2);
+      transform: scale(1.05);
+      animation: bannerPulse 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes bannerPulse {
+      0% { transform: scale(1.02); filter: brightness(0.75) contrast(1.1); }
+      100% { transform: scale(1.08); filter: brightness(0.65) contrast(1.3); }
+    }
+
+    /* 頂部遮罩與領域展開文字飾條 */
+    .banner-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(8, 9, 17, 0.3) 0%, rgba(8, 9, 17, 0.95) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding-bottom: 20px;
+    }
+
+    .domain-tag {
+      font-family: 'Mochiy Pop One', sans-serif;
+      font-size: 0.9rem;
+      color: var(--jujutsu-blue);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 4px 18px;
+      border: 1px solid var(--jujutsu-blue);
+      border-radius: 4px;
+      letter-spacing: 3px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+      margin-bottom: 8px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+      margin-top: -60px; /* 大頭貼向上跨越 Banner */
+    }
+
+    /* 個人大頭貼外框（咒力黑閃脈衝特效） */
+    .avatar-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin-bottom: 15px;
+    }
+
+    .avatar-container::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, var(--jujutsu-blue), var(--jujutsu-purple), var(--jujutsu-red), var(--jujutsu-blue));
+      animation: cursedEnergyRotate 4s linear infinite;
+      filter: blur(10px);
+      opacity: 0.9;
+    }
+
+    @keyframes cursedEnergyRotate {
+      100% { transform: rotate(360deg); }
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      position: relative;
+      z-index: 1;
+      border: 4px solid var(--bg-dark);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+    }
+
+    /* 階級標籤 (級別) */
+    .grade-badge {
+      font-family: 'Mochiy Pop One', sans-serif;
+      background: linear-gradient(90deg, #111, var(--jujutsu-red));
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 4px 16px;
+      border-radius: 4px;
+      border: 1px solid var(--jujutsu-red);
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      box-shadow: 0 0 12px rgba(255, 0, 85, 0.5);
+    }
+
+    /* 個人名字 (咒力雙色影與黑閃字型) */
+    .user-name {
+      font-family: 'Mochiy Pop One', 'Noto Sans TC', sans-serif;
+      font-size: 2.8rem;
+      color: #ffffff;
+      text-shadow: 
+        3px 3px 0px var(--jujutsu-red),
+        -2px -2px 0px var(--jujutsu-blue),
+        0 0 25px rgba(0, 240, 255, 0.6);
+      letter-spacing: 3px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .user-title {
+      color: var(--text-sub);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr); /* 電腦版 4 欄網格 */
+      gap: 20px;
+      width: 100%;
+    }
+
+    /* 關卡卡片共通基礎樣式 */
+    .stage-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 22px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      min-height: 110px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+    }
+
+    .stage-code {
+      font-family: 'Orbitron', 'Mochiy Pop One', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .stage-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .stage-card.unlocked {
+      backdrop-filter: blur(10px);
+      color: var(--text-main);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+    }
+
+    .stage-card.unlocked .stage-code {
+      color: var(--jujutsu-blue);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+    }
+
+    /* 術式光芒劃過背景 (Cursed Energy Slash) */
+    .stage-card.unlocked::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -150%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(0, 240, 255, 0.3) 48%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 0, 85, 0.3) 52%,
+        transparent 70%
+      );
+      transform: rotate(25deg);
+      transition: left 0.6s ease;
+    }
+
+    /* 已解鎖懸停 Hover 特效 */
+    .stage-card.unlocked:hover {
+      transform: translateY(-8px) scale(1.03);
+      border-color: var(--jujutsu-blue);
+      background: rgba(18, 24, 48, 0.95);
+      box-shadow: 
+        0 15px 35px rgba(0, 240, 255, 0.35),
+        0 0 20px rgba(255, 0, 85, 0.3);
+    }
+
+    .stage-card.unlocked:hover::before {
+      left: 100%;
+    }
+
+    .stage-card.unlocked:hover .stage-code {
+      color: #ffffff;
+      text-shadow: 0 0 12px var(--jujutsu-blue);
+    }
+
+    .stage-card.unlocked:hover .stage-title {
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    }
+
+    /* 點擊壓下感 */
+    .stage-card.unlocked:active {
+      transform: translateY(-2px) scale(0.98);
+    }
+
+    .stage-card.locked {
+      background: var(--locked-bg);
+      border: 1px dashed var(--locked-border);
+      color: var(--locked-text);
+      cursor: not-allowed;
+      user-select: none;
+    }
+
+    .stage-card.locked .stage-code {
+      color: var(--locked-text);
+    }
+
+    .stage-card.locked .stage-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--locked-text);
+    }
+
+    /* 未解鎖 Hover：咒力封印抵抗微顫 (Locked Shake) */
+    .stage-card.locked:hover {
+      border-color: rgba(255, 0, 85, 0.5);
+      background: rgba(255, 0, 85, 0.05);
+      animation: sealShake 0.4s ease-in-out;
+    }
+
+    .stage-card.locked:hover .stage-title {
+      color: var(--jujutsu-red);
+    }
+
+    @keyframes sealShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px) rotate(-1deg); }
+      40% { transform: translateX(6px) rotate(1deg); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    @media (max-width: 960px) {
+      .grid-container {
+        grid-template-columns: repeat(2, 1fr); /* 平板：2 欄 */
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .jujutsu-banner {
+        height: 240px;
+      }
+      .container {
+        margin-top: -50px;
+        padding: 0 15px;
+      }
+      .user-name {
+        font-size: 2.2rem;
+      }
+      .avatar-container {
+        width: 110px;
+        height: 110px;
+      }
+      .grid-container {
+        grid-template-columns: 1fr; /* 手機：1 欄大按鈕 */
+        gap: 14px;
+      }
+      .stage-card {
+        padding: 18px;
+        min-height: 95px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="jujutsu-banner">
+    <!-- 咒術迴戰五條悟/黑閃風格背景圖 -->
+    <img class="banner-img" src="https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1200&auto=format&fit=crop" alt="Jujutsu Kaisen Hero Banner" onerror="this.src='https://placehold.co/1200x400/0a0b18/00f0ff?text=JUJUTSU+KAISEN+PORTFOLIO'">
+    <div class="banner-overlay">
+      <span class="domain-tag">領域展開 · 網頁術式</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <section class="profile-section" style="display: flex; flex-direction: column; align-items: center;">
+      <div class="avatar-container">
+        <!-- 預設角色大頭貼 (可更換為自己的頭像圖片路徑) -->
+        <img class="avatar-img" src="https://api.dicebear.com/7.x/adventurer/svg?seed=GojoSatoru&backgroundColor=b6e3f4" alt="特級術師大頭貼">
+      </div>
+      <span class="grade-badge">特級術師 · LEVEL 16</span>
+      <h1 class="user-name">你的名字</h1>
+      <p class="user-title">⚡ 網頁程式設計 · 咒術闖關地圖 ⚡</p>
+    </section>
+
+    <main class="grid-container">
+      
+      <!-- 關卡 1 (已解鎖) -->
+      <a href="w1/index.html" class="stage-card unlocked">
+        <span class="stage-code">STAGE 01</span>
+        <span class="stage-title">Week 1 - 數位名片</span>
+      </a>
+
+      <!-- 關卡 2 (已解鎖) -->
+      <a href="w2/index.html" class="stage-card unlocked">
+        <span class="stage-code">STAGE 02</span>
+        <span class="stage-title">Week 2 - 今天吃甚麼?</span>
+      </a>
+
+      <!-- 關卡 3 至 16 (未解鎖封印狀態) -->
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 03</span>
+        <span class="stage-title">🔒 Week 3 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 04</span>
+        <span class="stage-title">🔒 Week 4 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 05</span>
+        <span class="stage-title">🔒 Week 5 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 06</span>
+        <span class="stage-title">🔒 Week 6 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 07</span>
+        <span class="stage-title">🔒 Week 7 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 08</span>
+        <span class="stage-title">🔒 Week 8 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 09</span>
+        <span class="stage-title">🔒 Week 9 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 10</span>
+        <span class="stage-title">🔒 Week 10 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 11</span>
+        <span class="stage-title">🔒 Week 11 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 12</span>
+        <span class="stage-title">🔒 Week 12 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 13</span>
+        <span class="stage-title">🔒 Week 13 - 尚未解鎖</span>
+      </div>
+
+      <div class="stage-card locked">
+        <span class="stage-code">STAGE 14</span>
+        <span class="stage-title">🔒 Week 14 - 尚未解鎖</span>
+        </div>
+
+    </main>
+  </div>
+
+</body>
+</html>
