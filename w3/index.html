@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日系漫畫風迷因產生器 - Manga Meme Generator</title>
+  
+  <!-- 引入 Google Fonts：Dela Gothic One (熱血標題字) 與 Noto Sans TC (內文) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <!-- 引入 FontAwesome 圖示庫 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- 引入 html2canvas 截圖下載庫 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* ==========================================
+       1. 基本變數與整體風格設定 (Manga Theme CSS)
+       ========================================== */
+    :root {
+      --manga-yellow: #FFE600;
+      --manga-red: #FF2E93;
+      --manga-black: #111111;
+      --manga-white: #FFFFFF;
+      --manga-gray: #F0F0F0;
+      --manga-border: 3.5px solid var(--manga-black);
+      --manga-shadow: 5px 5px 0px var(--manga-black);
+      --manga-shadow-sm: 3px 3px 0px var(--manga-black);
+      --font-title: 'Dela Gothic One', cursive, sans-serif;
+      --font-body: 'Noto Sans TC', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #fcebe6;
+      /* 漫畫半調黑白網點背景 */
+      background-image: radial-gradient(var(--manga-black) 15%, transparent 16%);
+      background-size: 12px 12px;
+      font-family: var(--font-body);
+      color: var(--manga-black);
+      min-height: 100vh;
+      padding: 20px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 頁面標題區 */
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+      position: relative;
+    }
+
+    header h1 {
+      font-family: var(--font-title);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      background-color: var(--manga-yellow);
+      color: var(--manga-black);
+      padding: 10px 25px;
+      border: var(--manga-border);
+      box-shadow: var(--manga-shadow);
+      display: inline-block;
+      transform: rotate(-1.5deg);
+      letter-spacing: 2px;
+    }
+
+    header p {
+      margin-top: 10px;
+      font-weight: 700;
+      background: var(--manga-white);
+      display: inline-block;
+      padding: 4px 12px;
+      border: 2px solid var(--manga-black);
+      box-shadow: 2px 2px 0 var(--manga-black);
+    }
+
+    /* ==========================================
+       2. 主版面配置 (Main Layout RWD)
+       ========================================== */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* 桌面端：左側控制面板，右側即時預覽 */
+    @media (min-width: 850px) {
+      .app-container {
+        flex-direction: row;
+        align-items: flex-start;
+      }
+      
+      .control-panel {
+        flex: 1;
+        position: sticky;
+        top: 20px;
+      }
+
+      .preview-panel {
+        flex: 1.2;
+        position: sticky;
+        top: 20px;
+      }
+    }
+
+    /* 卡片通用樣式 (日系粗黑框對話框風格) */
+    .manga-card {
+      background-color: var(--manga-white);
+      border: var(--manga-border);
+      box-shadow: var(--manga-shadow);
+      border-radius: 8px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .manga-card::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 20px;
+      width: 12px;
+      height: 12px;
+      background-color: var(--manga-black);
+    }
+
+    .card-title {
+      font-family: var(--font-title);
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      border-bottom: 3px solid var(--manga-black);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ==========================================
+       3. 控制面板區塊 (Control Panel Styling)
+       ========================================== */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    /* 上傳圖片拖曳區 */
+    .file-drop-area {
+      border: 3px dashed var(--manga-black);
+      border-radius: 6px;
+      padding: 20px;
+      text-align: center;
+      background-color: #FAFAFA;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .file-drop-area:hover, .file-drop-area.drag-over {
+      background-color: #FFF9C4;
+      border-color: var(--manga-red);
+    }
+
+    .file-drop-area input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-drop-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      color: var(--manga-black);
+    }
+
+    /* 文字輸入框 */
+    .manga-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 1rem;
+      border: 2.5px solid var(--manga-black);
+      border-radius: 6px;
+      outline: none;
+      box-shadow: var(--manga-shadow-sm);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .manga-input:focus {
+      background-color: #FFFDE7;
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0px var(--manga-black);
+    }
+
+    /* 雙欄位排列 */
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* 滑桿風格 (Range Inputs) */
+    .manga-range {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 10px;
+      background: #E0E0E0;
+      border: 2px solid var(--manga-black);
+      border-radius: 5px;
+      outline: none;
+    }
+
+    .manga-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      background: var(--manga-yellow);
+      border: 2.5px solid var(--manga-black);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 1px 1px 0px var(--manga-black);
+    }
+
+    /* 顏色選擇器 */
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .manga-color-picker {
+      -webkit-appearance: none;
+      border: 2.5px solid var(--manga-black);
+      width: 45px;
+      height: 40px;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 2px;
+      background-color: var(--manga-white);
+      box-shadow: var(--manga-shadow-sm);
+    }
+
+    /* 特效按鈕組 */
+    .fx-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .fx-btn {
+      flex: 1;
+      padding: 8px 10px;
+      font-weight: 700;
+      border: 2.5px solid var(--manga-black);
+      background-color: var(--manga-white);
+      box-shadow: var(--manga-shadow-sm);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .fx-btn.active {
+      background-color: var(--manga-yellow);
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0px var(--manga-black);
+    }
+
+    /* 主按鈕：下載圖片 */
+    .download-btn {
+      width: 100%;
+      padding: 14px;
+      font-family: var(--font-title);
+      font-size: 1.3rem;
+      background-color: var(--manga-red);
+      color: var(--manga-white);
+      border: var(--manga-border);
+      box-shadow: var(--manga-shadow);
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .download-btn:hover {
+      background-color: #ff1280;
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0px var(--manga-black);
+    }
+
+    .download-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px var(--manga-black);
+    }
+
+    /* ==========================================
+       4. 迷因預覽區塊 (Preview Canvas Styling)
+       ========================================== */
+    .preview-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 迷因主畫布容器 (html2canvas 截圖目標) */
+    #memePreview {
+      position: relative;
+      width: 100%;
+      max-width: 550px;
+      background-color: var(--manga-black);
+      border: 4px solid var(--manga-black);
+      box-shadow: 6px 6px 0px var(--manga-black);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 320px;
+      user-select: none;
+    }
+
+    /* 底層圖片 */
+    #memeImage {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: contain;
+    }
+
+    /* 漫畫特效疊層：集中線 (Speed Lines) */
+    .speed-lines-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(255, 255, 255, 0.35) 0deg 3deg,
+        transparent 3deg 8deg
+      );
+      display: none; /* 預設隱藏 */
+      z-index: 2;
+    }
+
+    /* 漫畫特效疊層：黑色點陣 */
+    .dots-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(0,0,0,0.4) 20%, transparent 20%);
+      background-size: 8px 8px;
+      display: none;
+      z-index: 2;
+    }
+
+    /* 雙層文字通用樣式 */
+    .meme-text {
+      position: absolute;
+      width: 90%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-family: var(--font-title);
+      font-size: 38px;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      word-wrap: break-word;
+      line-height: 1.2;
+      z-index: 5;
+      cursor: default;
+      
+      /* 透過 -webkit-text-stroke 建立熱血黑邊外框 */
+      -webkit-text-stroke: 2.5px #000000;
+      
+      /* 備用多重陰影，確保在舊設備上一樣清晰 */
+      text-shadow: 
+        3px 3px 0 #000,
+       -3px -3px 0 #000,  
+        3px -3px 0 #000,
+       -3px  3px 0 #000,
+        0px  3px 0 #000,
+        0px -3px 0 #000,
+        3px  0px 0 #000,
+       -3px  0px 0 #000;
+    }
+
+    #textTop {
+      top: 5%;
+    }
+
+    #textBottom {
+      bottom: 5%;
+    }
+
+    /* 預設提示卡 (無圖片時) */
+    .placeholder-box {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--manga-white);
+    }
+
+    .placeholder-box i {
+      font-size: 3.5rem;
+      margin-bottom: 10px;
+      color: var(--manga-yellow);
+    }
+
+    /* 頁尾 */
+    footer {
+      margin-top: 30px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部熱血標題區 -->
+  <header>
+    <h1>💥 迷因召喚術！</h1>
+    <br>
+    <p>日系漫畫風 自定義 Meme 產生器</p>
+  </header>
+
+  <!-- 主應用程式區域 -->
+  <div class="app-container">
+    
+    <!-- 左側 (或上方)：控制面板 -->
+    <div class="control-panel manga-card">
+      <div class="card-title">
+        <i class="fa-solid fa-sliders"></i> 控制指令區
+      </div>
+
+      <!-- 1. 本機圖片上傳 -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-image"></i> 1. 上傳底圖 (FileReader 本機讀取)</label>
+        <div class="file-drop-area" id="dropArea">
+          <i class="fa-solid fa-cloud-arrow-up file-drop-icon"></i>
+          <p>點擊或拖曳圖片到這裡</p>
+          <!-- 嚴格使用 file input 避免 CORS 錯誤 -->
+          <input type="file" id="imageInput" accept="image/*">
+        </div>
+      </div>
+
+      <!-- 2. 雙層文字輸入 -->
+      <div class="form-group">
+        <label for="inputTopText"><i class="fa-solid fa-font"></i> 2. 上方台詞 (Top Text)</label>
+        <input type="text" id="inputTopText" class="manga-input" placeholder="例如：這也在你的計算之中嗎..." value="這也在你的計算之中嗎？！">
+      </div>
+
+      <div class="form-group">
+        <label for="inputBottomText"><i class="fa-solid fa-font"></i> 3. 下方台詞 (Bottom Text)</label>
+        <input type="text" id="inputBottomText" class="manga-input" placeholder="例如：太強了，簡直就是神！" value="太強了！簡直就是神！">
+      </div>
+
+      <!-- 3. 滑桿參數調整 -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-text-height"></i> 字體大小: <span id="fontSizeVal">38px</span></label>
+        <input type="range" id="fontSizeRange" class="manga-range" min="16" max="80" value="38">
+      </div>
+
+      <div class="input-row">
+        <div class="form-group">
+          <label>上方位置 (Y)</label>
+          <input type="range" id="topPosRange" class="manga-range" min="0" max="40" value="5">
+        </div>
+        <div class="form-group">
+          <label>下方位置 (Y)</label>
+          <input type="range" id="bottomPosRange" class="manga-range" min="0" max="40" value="5">
+        </div>
+      </div>
+
+      <!-- 4. 文字與外框顏色 -->
+      <div class="input-row">
+        <div class="form-group">
+          <label>文字顏色</label>
+          <div class="color-picker-wrapper">
+            <input type="color" id="textColorPicker" class="manga-color-picker" value="#ffffff">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>邊框顏色</label>
+          <div class="color-picker-wrapper">
+            <input type="color" id="strokeColorPicker" class="manga-color-picker" value="#000000">
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. 漫畫特效疊層 -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-wand-magic-sparkles"></i> 漫畫特效疊加</label>
+        <div class="fx-buttons">
+          <button type="button" class="fx-btn" id="btnSpeedLines">⚡ 集中線</button>
+          <button type="button" class="fx-btn" id="btnDots">░ 網點風</button>
+        </div>
+      </div>
+
+      <!-- 6. 下載按鈕 -->
+      <button id="downloadBtn" class="download-btn">
+        <i class="fa-solid fa-bolt"></i> ⚡ 召喚迷因！(下載圖片)
+      </button>
+    </div>
+
+    <!-- 右側 (或下方)：即時預覽區 -->
+    <div class="preview-panel manga-card">
+      <div class="card-title">
+        <i class="fa-solid fa-eye"></i> 即時預覽畫面
+      </div>
+
+      <div class="preview-wrapper">
+        <!-- 被抓取轉換成圖片的容器 -->
+        <div id="memePreview">
+          <!-- 特效層 -->
+          <div class="speed-lines-overlay" id="speedLinesOverlay"></div>
+          <div class="dots-overlay" id="dotsOverlay"></div>
+
+          <!-- 文字層 -->
+          <div id="textTop" class="meme-text">這也在你的計算之中嗎？！</div>
+          <div id="textBottom" class="meme-text">太強了！簡直就是神！</div>
+
+          <!-- 底圖 (預設提示或使用者圖片) -->
+          <img id="memeImage" src="" alt="Meme Preview" style="display: none;">
+          <div id="placeholderBox" class="placeholder-box">
+            <i class="fa-solid fa-file-image"></i>
+            <p>請從左側上傳圖片<br>開啟你的熱血迷因！</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>MANGA MEME GENERATOR &copy; 2026 - HTML2CANVAS SINGLE PAGE APP</p>
+  </footer>
+
+  <!-- ==========================================
+       5. JavaScript 邏輯處理 (Vanilla JS)
+       ========================================== -->
+  <script>
+    // 當 DOM 載入完畢後執行
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      // 取得 HTML 元素 DOM reference
+      const imageInput = document.getElementById('imageInput');
+      const dropArea = document.getElementById('dropArea');
+      const memeImage = document.getElementById('memeImage');
+      const placeholderBox = document.getElementById('placeholderBox');
+
+      const inputTopText = document.getElementById('inputTopText');
+      const inputBottomText = document.getElementById('inputBottomText');
+      const textTop = document.getElementById('textTop');
+      const textBottom = document.getElementById('textBottom');
+
+      const fontSizeRange = document.getElementById('fontSizeRange');
+      const fontSizeVal = document.getElementById('fontSizeVal');
+      const topPosRange = document.getElementById('topPosRange');
+      const bottomPosRange = document.getElementById('bottomPosRange');
+
+      const textColorPicker = document.getElementById('textColorPicker');
+      const strokeColorPicker = document.getElementById('strokeColorPicker');
+
+      const btnSpeedLines = document.getElementById('btnSpeedLines');
+      const btnDots = document.getElementById('btnDots');
+      const speedLinesOverlay = document.getElementById('speedLinesOverlay');
+      const dotsOverlay = document.getElementById('dotsOverlay');
+
+      const downloadBtn = document.getElementById('downloadBtn');
+      const memePreview = document.getElementById('memePreview');
+
+      // -----------------------------------------------------------------
+      // 【功能 1】圖片上傳處理 (FileReader 避開 CORS)
+      // -----------------------------------------------------------------
+      function handleFileSelect(file) {
+        if (!file || !file.type.match('image.*')) {
+          alert('請上傳有效的圖片檔案 (JPG, PNG, GIF 等)！');
+          return;
+        }
+
+        // 使用 FileReader 將檔案讀取為 DataURL (Base64)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          memeImage.src = e.target.result;
+          memeImage.style.display = 'block';
+          placeholderBox.style.display = 'none'; // 隱藏預設文字
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Input 選擇檔案事件
+      imageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        handleFileSelect(file);
+      });
+
+      // 拖曳 (Drag and Drop) 圖片功能
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropArea.classList.add('drag-over');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropArea.classList.remove('drag-over');
+        });
+      });
+
+      dropArea.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        handleFileSelect(file);
+      });
+
+
+      // -----------------------------------------------------------------
+      // 【功能 2】雙層文字即時同步輸入
+      // -----------------------------------------------------------------
+      inputTopText.addEventListener('input', () => {
+        textTop.textContent = inputTopText.value;
+      });
+
+      inputBottomText.addEventListener('input', () => {
+        textBottom.textContent = inputBottomText.value;
+      });
+
+
+      // -----------------------------------------------------------------
+      // 【功能 3】滑桿控制 (字體大小、垂直位置)
+      // -----------------------------------------------------------------
+      // 字體大小
+      fontSizeRange.addEventListener('input', () => {
+        const size = fontSizeRange.value + 'px';
+        fontSizeVal.textContent = size;
+        textTop.style.fontSize = size;
+        textBottom.style.fontSize = size;
+      });
+
+      // 上方文字垂直位置
+      topPosRange.addEventListener('input', () => {
+        textTop.style.top = topPosRange.value + '%';
+      });
+
+      // 下方文字垂直位置
+      bottomPosRange.addEventListener('input', () => {
+        textBottom.style.bottom = bottomPosRange.value + '%';
+      });
+
+
+      // -----------------------------------------------------------------
+      // 【功能 4】顏色與外框選擇
+      // -----------------------------------------------------------------
+      textColorPicker.addEventListener('input', () => {
+        const color = textColorPicker.value;
+        textTop.style.color = color;
+        textBottom.style.color = color;
+      });
+
+      strokeColorPicker.addEventListener('input', () => {
+        const strokeColor = strokeColorPicker.value;
+        // 更新文字外框線顏色
+        textTop.style.webkitTextStrokeColor = strokeColor;
+        textBottom.style.webkitTextStrokeColor = strokeColor;
+      });
+
+
+      // -----------------------------------------------------------------
+      // 【功能 5】漫畫特效開關 (集中線/網點)
+      // -----------------------------------------------------------------
+      btnSpeedLines.addEventListener('click', () => {
+        btnSpeedLines.classList.toggle('active');
+        const isVisible = speedLinesOverlay.style.display === 'block';
+        speedLinesOverlay.style.display = isVisible ? 'none' : 'block';
+      });
+
+      btnDots.addEventListener('click', () => {
+        btnDots.classList.toggle('active');
+        const isVisible = dotsOverlay.style.display === 'block';
+        dotsOverlay.style.display = isVisible ? 'none' : 'block';
+      });
+
+
+      // -----------------------------------------------------------------
+      // 【功能 6】一鍵下載圖檔 (html2canvas)
+      // -----------------------------------------------------------------
+      downloadBtn.addEventListener('click', () => {
+        // 下載中狀態反饋
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 召喚中...';
+        downloadBtn.style.opacity = '0.8';
+        downloadBtn.disabled = true;
+
+        // 使用 html2canvas 將 preview 容器轉換成 Canvas
+        html2canvas(memePreview, {
+          scale: 2, // 2倍解析度提升畫質
+          useCORS: true, // 允許跨域圖片 (雖然我們用 FileReader 已避開)
+          allowTaint: true,
+          backgroundColor: '#111111'
+        }).then(canvas => {
+          // 將 Canvas 轉為 Base64 DataURL PNG
+          const imageUrl = canvas.toDataURL('image/png');
+
+          // 建立隱藏的 <a> 標籤進行下載
+          const downloadLink = document.createElement('a');
+          downloadLink.href = imageUrl;
+          downloadLink.download = 'my-meme.png'; // 下載檔名
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+
+          // 恢復按鈕狀態
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.style.opacity = '1';
+          downloadBtn.disabled = false;
+        }).catch(err => {
+          console.error('截圖失敗:', err);
+          alert('下載圖片時發生錯誤，請稍後再試！');
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.style.opacity = '1';
+          downloadBtn.disabled = false;
+        });
+      });
+
+    });
+  </script>
+</body>
+</html>
