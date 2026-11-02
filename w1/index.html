@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個人數位名片</title>
+  
+  <!-- 引入 Google 字體與 Font Awesome 圖標庫 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- CSS 樣式直接內嵌於 <style> 標籤中 -->
+<!-- CSS 樣式直接內嵌於 <style> 標籤中 -->
+  <style>
+    /* ================================
+       1. 全局樣式設定與變數定義
+       ================================ */
+    :root {
+      /* 強化馬卡龍粉藍漸層背景 */
+      --bg-gradient: linear-gradient(135deg, #ffd1dc 0%, #d8efff 100%);
+      --card-bg: #ffffff;
+      --text-primary: #5c5460;
+      --text-secondary: #908899;
+      
+      --ig-btn-bg: #ffe4e6;
+      --ig-btn-text: #e11d48;
+      --ig-btn-hover: #fecdd3;
+
+      --email-btn-bg: #e0f2fe;
+      --email-btn-text: #0284c7;
+      --email-btn-hover: #bae6fd;
+    }
+
+    /* 關鍵修正：必須是 * 符號而不是 - 符號 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-gradient);
+      /* 防止背景重複並填滿整個螢幕高 */
+      background-attachment: fixed;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* ================================
+       2. 名片主體樣式 (置中與微陰影)
+       ================================ */
+    .profile-card {
+      background-color: var(--card-bg);
+      width: 100%;
+      max-width: 360px;
+      padding: 40px 30px;
+      border-radius: 28px;
+      text-align: center;
+      /* 質感柔和微陰影 */
+      box-shadow: 0 15px 35px rgba(180, 160, 190, 0.2),
+                  0 5px 15px rgba(0, 0, 0, 0.04);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* 懸浮微提升效果 */
+    .profile-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(180, 160, 190, 0.28),
+                  0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    /* ================================
+       3. 大頭貼圖片樣式
+       ================================ */
+    .avatar-container {
+      width: 110px;
+      height: 110px;
+      margin: 0 auto 20px auto;
+      position: relative;
+    }
+
+    .avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      /* 馬卡龍粉色邊框與輕微陰影 */
+      border: 4px solid #fff0f3;
+      box-shadow: 0 8px 16px rgba(255, 182, 193, 0.3);
+    }
+
+    /* ================================
+       4. 文字區域樣式
+       ================================ */
+    .name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .bio {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    /* ================================
+       5. 按鈕樣式 (Instagram & Email)
+       ================================ */
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.25s ease;
+    }
+
+    /* Instagram 按鈕樣式 */
+    .btn-instagram {
+      background-color: #340661;
+      color: var(--ig-btn-text);
+    }
+
+    .btn-instagram:hover {
+      background-color: #660ec9;
+      transform: scale(1.02);
+    }
+
+    /* Email 按鈕樣式 */
+    .btn-email {
+      background-color: var(--email-btn-bg);
+      color: var(--email-btn-text);
+    }
+
+    .btn-email:hover {
+      background-color: var(--email-btn-hover);
+      transform: scale(1.02);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 名片主卡片區塊 -->
+  <div class="profile-card">
+    
+    <!-- 圓形大頭貼照片 -->
+    <div class="avatar-container">
+      <img src="https://i.postimg.cc/8kWX6yRB/IMG20250523130635.jpg" alt="個人大頭貼" class="avatar">
+    </div>
+
+    <!-- 姓名與簡介 -->
+    <h1 class="name"></h1>
+    <p class="bio">能力越大，責任越大</p>
+
+    <!-- 按鈕連結區塊 -->
+    <div class="button-group">
+      <a href="https://www.instagram.com/ysh._5610/" target="_blank" class="btn btn-instagram">
+        <i class="fa-brands fa-instagram"></i> Instagram
+      </a>
+      <a href="" class="btn btn-email">
+        <i class="fa-regular fa-envelope"></i> Email 我
+      </a>
+    </div>
+
+  </div>
+
+</body>
+</html>
