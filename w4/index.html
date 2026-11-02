@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>朋友對我的動態留言板</title>
+  <style>
+    /* --------------------------------------------------
+       CSS 樣式設計：賽博朋克霓虹風格 (Cyberpunk Neon)
+    -------------------------------------------------- */
+    :root {
+      --bg-color: #0d0f18;
+      --card-bg: rgba(22, 27, 46, 0.85);
+      --primary-neon: #00f3ff;
+      --secondary-neon: #ff0055;
+      --text-color: #e0e6ed;
+      --text-dim: #8a99ad;
+      --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(0, 243, 255, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(255, 0, 85, 0.08), transparent 25%);
+      color: var(--text-color);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    /* 頁面標題 */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 
+        0 0 5px var(--primary-neon),
+        0 0 10px var(--primary-neon),
+        0 0 20px var(--primary-neon);
+      margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+      color: var(--text-dim);
+      font-size: 1rem;
+      letter-spacing: 1px;
+    }
+
+    /* 酷炫 Loading 動畫 */
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 5rem;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(0, 243, 255, 0.1);
+      border-left-color: var(--primary-neon);
+      border-right-color: var(--secondary-neon);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    }
+
+    .loading-text {
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      color: var(--primary-neon);
+      text-shadow: 0 0 8px var(--primary-neon);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* 瀑布流 Layout (Masonry) */
+    .masonry-board {
+      display: none; /* 載入完成前隱藏 */
+      column-count: 3;
+      column-gap: 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* RWD 欄數調整 */
+    @media (max-width: 900px) {
+      .masonry-board {
+        column-count: 2;
+      }
+    }
+    @media (max-width: 600px) {
+      .masonry-board {
+        column-count: 1;
+      }
+    }
+
+    /* 留言卡片樣式 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid rgba(0, 243, 255, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      break-inside: avoid; /* 防止卡片被瀑布流截斷 */
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--primary-neon), var(--secondary-neon));
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: var(--primary-neon);
+      box-shadow: 0 10px 20px rgba(0, 243, 255, 0.2);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+      padding-bottom: 0.5rem;
+    }
+
+    .author {
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: var(--primary-neon);
+    }
+
+    .timestamp {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .message {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-color);
+      white-space: pre-wrap; /* 保持留言換行 */
+      word-break: break-word;
+    }
+
+    .error-msg {
+      color: var(--secondary-neon);
+      text-align: center;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>留言板</h1>
+    <p class="subtitle">MESSAGE BOARD</p>
+  </header>
+
+  <!-- 讀取中動畫區塊 -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">讀取留言中...</div>
+  </div>
+
+  <!-- 瀑布流卡片牆 -->
+  <main class="masonry-board" id="board"></main>
+
+  <script>
+    /* --------------------------------------------------
+       JavaScript：資料串接與 CSV 解析邏輯
+    -------------------------------------------------- */
+
+    // 原始試算表 HTML 網址轉成 CSV 導出網址
+    const pubhtmlUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS8zzYpw58MlSIrDoKk6tFfnANpG2yqTmThV6UZv_ZdbjGO_hjrqg4od7__2g5j5-mr839DRWZd6a2i/pubhtml";
+    const csvUrl = pubhtmlUrl.replace('/pubhtml', '/pub?output=csv');
+
+    /**
+     * 穩健的 CSV 解析器
+     * 正確處理雙引號包覆、雙引號跳脫及留言內的逗號與換行符號
+     */
+    function parseCSV(text) {
+      const result = [];
+      let row = [];
+      let col = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            col += '"';
+            i++; // 跳過下一個轉義雙引號
+          } else {
+            inQuotes = !inQuotes; // 切換引號狀態
+          }
+        } else if (char === ',' && !inQuotes) {
+          row.push(col.trim());
+          col = '';
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+          if (char === '\r' && nextChar === '\n') {
+            i++; // 處理 \r\n 換行
+          }
+          row.push(col.trim());
+          if (row.some(field => field !== '')) {
+            result.push(row);
+          }
+          row = [];
+          col = '';
+        } else {
+          col += char;
+        }
+      }
+      if (col || row.length > 0) {
+        row.push(col.trim());
+        if (row.some(field => field !== '')) {
+          result.push(row);
+        }
+      }
+      return result;
+    }
+
+    /**
+     * 動態繪製卡片至 DOM
+     */
+    function renderBoard(data) {
+      const board = document.getElementById('board');
+      const loading = document.getElementById('loading');
+
+      // 若有表頭 (標頭列: 時間戳記、名字、悄悄話)，進行忽略
+      const rows = data.slice(1);
+
+      if (rows.length === 0) {
+        loading.innerHTML = '<div class="error-msg">目前還沒有任何留言喔！</div>';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      rows.forEach(row => {
+        // 欄位預設：[0]時間戳記, [1]名字, [2]悄悄話
+        const timestamp = row[0] || '未知時間';
+        const name = row[1] || '匿名朋友';
+        const message = row[2] || '（此留言無內容）';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="author">${escapeHTML(name)}</span>
+            <span class="timestamp">${escapeHTML(timestamp)}</span>
+          </div>
+          <div class="message">${escapeHTML(message)}</div>
+        `;
+
+        fragment.appendChild(card);
+      });
+
+      board.appendChild(fragment);
+
+      // 隱藏 Loading，顯示卡片牆
+      loading.style.display = 'none';
+      board.style.display = 'block';
+    }
+
+    /**
+     * 避免 XSS 攻擊的字串轉義處理
+     */
+    function escapeHTML(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    /**
+     * 初始化：擷取資料
+     */
+    async function init() {
+      try {
+        const response = await fetch(csvUrl);
+        if (!response.ok) throw new Error('網路回應異常');
+        
+        const csvText = await response.text();
+        const parsedData = parseCSV(csvText);
+        
+        renderBoard(parsedData);
+      } catch (error) {
+        console.error('Fetch 失敗:', error);
+        document.getElementById('loading').innerHTML = `
+          <div class="error-msg">
+            ⚠️ 留言載入失敗！<br>
+            請確認 Google 試算表是否已設為「發布到網路」。
+          </div>
+        `;
+      }
+    }
+
+    // 啟動程式
+    init();
+  </script>
+</body>
+</html>
