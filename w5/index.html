@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>雲端心電感應 | 全息系統 HUD</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            stealth: {
+              bg: '#0b0c10',
+              card: '#1f2833',
+              accent: '#45a29e',
+              glow: '#66fcf1',
+              holo: '#00f0ff',
+              holoBlue: '#00a3ff',
+              darkHolo: '#051829',
+              border: '#1f364d'
+            }
+          },
+          fontFamily: {
+            mono: ['Fira Code', 'monospace', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 參考圖一：深黑藍科技背景與全息線條微光 */
+    body {
+      background-color: #04080e;
+      background-image: 
+        radial-gradient(circle at 50% 30%, rgba(0, 163, 255, 0.12) 0%, transparent 70%),
+        radial-gradient(circle at 50% 80%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+        linear-gradient(to right, rgba(0, 240, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+    }
+
+    /* 參考圖一：我獨自升級 NOTIFICATION 全息狀態視窗邊框與外框 */
+    .solo-holo-box {
+      position: relative;
+      background: rgba(5, 20, 35, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(0, 240, 255, 0.5);
+      box-shadow: 
+        0 0 25px rgba(0, 163, 255, 0.25), 
+        inset 0 0 20px rgba(0, 240, 255, 0.08);
+    }
+
+    /* 頂部與底部科技凸起邊條裝飾 (圖一風格) */
+    .solo-holo-box::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: -2px;
+      right: -2px;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #00f0ff, #00a3ff, transparent);
+      box-shadow: 0 0 10px #00f0ff;
+    }
+    .solo-holo-box::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: -2px;
+      right: -2px;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #00a3ff, #00f0ff, transparent);
+      box-shadow: 0 0 10px #00f0ff;
+    }
+
+    /* 戰術四角細節 */
+    .corner-bracket {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-color: #00f0ff;
+      pointer-events: none;
+    }
+    .cb-tl { top: -2px; left: -2px; border-top: 2px solid #00f0ff; border-left: 2px solid #00f0ff; }
+    .cb-tr { top: -2px; right: -2px; border-top: 2px solid #00f0ff; border-right: 2px solid #00f0ff; }
+    .cb-bl { bottom: -2px; left: -2px; border-bottom: 2px solid #00f0ff; border-left: 2px solid #00f0ff; }
+    .cb-br { bottom: -2px; right: -2px; border-bottom: 2px solid #00f0ff; border-right: 2px solid #00f0ff; }
+
+    /* 圖一經典：圓框藍光全息驚嘆號按鈕 (隱藏房主按鈕) */
+    .holo-exclamation-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 240, 255, 0.8);
+      background: rgba(4, 15, 28, 0.9);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.3);
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .holo-exclamation-btn:hover {
+      border-color: #66fcf1;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.5);
+      transform: scale(1.08);
+    }
+    .holo-exclamation-btn .exclamation-mark {
+      font-family: 'Fira Code', monospace;
+      font-weight: 900;
+      font-size: 22px;
+      color: #00f0ff;
+      text-shadow: 0 0 8px #00f0ff, 0 0 16px #00a3ff;
+      line-height: 1;
+    }
+
+    /* 3D CSS 翻牌動畫 */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 0.25rem;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+
+    /* 動態微光與狀態燈 */
+    @keyframes pulse-cyan {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.9; }
+    }
+    .status-pulse {
+      animation: pulse-cyan 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="text-slate-200 font-mono min-h-screen flex flex-col justify-between p-4 md:p-8">
+
+  <!-- 頂部 Header & 戰術 HUD 資訊欄 -->
+  <header class="max-w-4xl mx-auto w-full mb-6">
+    <div class="solo-holo-box p-4 flex justify-between items-center rounded-sm">
+      <div class="cb-tl"></div><div class="cb-tr"></div><div class="cb-bl"></div><div class="cb-br"></div>
+      
+      <div class="flex items-center space-x-3">
+        <div class="w-3 h-3 bg-cyan-400 rounded-full status-pulse"></div>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold tracking-widest text-cyan-400 flex items-center gap-2">
+            <span>[ SYSTEM NOTIFICATION ]</span>
+          </h1>
+          <p class="text-xs text-slate-400">雲端心電感應 // 全息默契同步介面</p>
+        </div>
+      </div>
+      
+      <!-- 頂部按鈕區：包含房間代碼與圖一風格驚嘆號房主按鈕 -->
+      <div class="flex items-center space-x-3">
+        <div class="text-right hidden sm:block">
+          <span class="text-xs text-cyan-500/70 block">ROOM CODE</span>
+          <span id="display-room-code" class="text-sm font-bold text-cyan-300">----</span>
+        </div>
+        
+        <button id="copy-link-btn" title="複製房間連結" class="p-2.5 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:bg-cyan-500/10 transition rounded-sm">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+        </button>
+
+        <!-- 圖一風格：藍色全息驚嘆號 (隱藏房主按鈕) -->
+        <button id="toggle-host-btn" title="切換房主控制台" class="holo-exclamation-btn">
+          <span class="exclamation-mark">!</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容區 (大廳 / 遊戲介面) -->
+  <main class="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-center">
+
+    <!-- 階段 1：登入與選擇房間屏障 -->
+    <div id="setup-screen" class="solo-holo-box p-6 md:p-8 rounded-sm text-center max-w-md mx-auto w-full">
+      <div class="cb-tl"></div><div class="cb-tr"></div><div class="cb-bl"></div><div class="cb-br"></div>
+      
+      <!-- 圖一 Notification 標頭圖示 -->
+      <div class="inline-flex p-3 rounded-full bg-cyan-500/10 border border-cyan-500/40 mb-4 text-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+        <span class="font-mono text-2xl font-black text-cyan-300">!</span>
+      </div>
+      
+      <h2 class="text-xl font-bold text-cyan-400 mb-2 tracking-widest">NOTIFICATION</h2>
+      <p class="text-xs text-slate-400 mb-6">• [You've become a Player.] 請輸入暱稱與房號登入系統</p>
+      
+      <div class="space-y-4 text-left">
+        <div>
+          <label class="text-xs text-cyan-400 tracking-wider block mb-1">PLAYER NAME // 玩家暱稱</label>
+          <input type="text" id="player-name-input" placeholder="例如: Jotaro" class="w-full bg-slate-950 border border-cyan-900 focus:border-cyan-400 text-slate-200 px-4 py-2.5 outline-none transition text-sm">
+        </div>
+        <div>
+          <label class="text-xs text-cyan-400 tracking-wider block mb-1">ROOM CODE // 房間代碼</label>
+          <input type="text" id="room-code-input" placeholder="例如: 8888" class="w-full bg-slate-950 border border-cyan-900 focus:border-cyan-400 text-slate-200 px-4 py-2.5 outline-none transition text-sm uppercase">
+        </div>
+        <button id="join-btn" class="w-full py-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400 text-cyan-300 font-bold tracking-widest transition shadow-[0_0_20px_rgba(0,240,255,0.25)]">
+          INITIALIZE LINK (登入房間)
+        </button>
+      </div>
+    </div>
+
+    <!-- 階段 2：遊戲主區域 -->
+    <div id="game-screen" class="hidden space-y-6">
+
+      <!-- 隱藏房主控制台視窗 (預設隱藏) -->
+      <div id="host-panel" class="hidden solo-holo-box p-5 border-amber-500/50 bg-slate-950/95 rounded-sm">
+        <div class="cb-tl"></div><div class="cb-tr"></div><div class="cb-bl"></div><div class="cb-br"></div>
+        <div class="flex justify-between items-center mb-4 border-b border-amber-500/30 pb-2">
+          <div class="flex items-center gap-2 text-amber-400">
+            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            <span class="font-bold tracking-wider text-sm">[HOST COMMAND CONSOLE] 隱藏房主控制台</span>
+          </div>
+          <span id="player-count-badge" class="text-xs bg-amber-500/10 border border-amber-500/40 text-amber-300 px-2.5 py-1">
+            已送出答案: 0 人
+          </span>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs text-amber-400 block mb-1">SET QUEST // 發布題目</label>
+            <div class="flex gap-2">
+              <input type="text" id="question-input" placeholder="例如：提到夏天會聯想到的食物？" class="flex-1 bg-slate-900 border border-amber-500/30 text-slate-200 px-3 py-2 text-sm outline-none focus:border-amber-400">
+              <button id="send-question-btn" class="px-4 py-2 bg-amber-500/20 border border-amber-500/50 text-amber-300 hover:bg-amber-500/30 text-xs tracking-wider transition">
+                出題並開始
+              </button>
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button id="reveal-btn" class="flex-1 py-2.5 bg-cyan-500/20 border border-cyan-400 text-cyan-300 hover:bg-cyan-500/30 font-bold text-sm tracking-wider transition shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+              REVEAL CARDS (同步開牌)
+            </button>
+            <button id="reset-btn" class="px-4 py-2.5 bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30 text-xs tracking-wider transition">
+              RESET (重置下一輪)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目顯示視窗 (圖一 Notification 卡片樣式) -->
+      <div class="solo-holo-box p-6 text-center rounded-sm">
+        <div class="cb-tl"></div><div class="cb-tr"></div><div class="cb-bl"></div><div class="cb-br"></div>
+        <span class="text-xs text-cyan-400/80 tracking-widest block mb-1">• [Daily Quest Objective]</span>
+        <h2 id="current-question-text" class="text-xl md:text-2xl font-bold text-slate-100 tracking-wide min-h-[36px] flex items-center justify-center">
+          <span class="text-slate-500 text-base italic">-- 等待房主發布任務題目 --</span>
+        </h2>
+      </div>
+
+      <!-- 玩家填答視窗 -->
+      <div id="answer-form-box" class="solo-holo-box p-5 rounded-sm">
+        <div class="cb-tl"></div><div class="cb-tr"></div><div class="cb-bl"></div><div class="cb-br"></div>
+        <label class="text-xs text-cyan-400 tracking-wider block mb-2">YOUR RESPONSE // 填寫你的答案</label>
+        <div class="flex gap-2">
+          <input type="text" id="user-answer-input" placeholder="輸入默契答案..." class="flex-1 bg-slate-950 border border-cyan-900 focus:border-cyan-400 text-slate-200 px-4 py-2 text-sm outline-none">
+          <button id="submit-answer-btn" class="px-5 py-2 bg-cyan-500/20 border border-cyan-400 text-cyan-300 hover:bg-cyan-500/30 text-sm font-bold tracking-wider transition">
+            SUBMIT (送出)
+          </button>
+        </div>
+        <p id="submit-status-msg" class="text-xs text-cyan-400/70 mt-2 hidden">✓ 答案已同步至遠端伺服器</p>
+      </div>
+
+      <!-- 3D 翻牌顯示陣列 -->
+      <div>
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-xs text-cyan-400 tracking-widest">[SYNCHRONIZED CARDS / 默契翻牌陣列]</span>
+          <span id="game-status-tag" class="text-xs px-2 py-0.5 bg-slate-900 border border-cyan-500/40 text-cyan-400">WAITING</span>
+        </div>
+        <div id="cards-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <!-- 3D 卡片將動態生成於此 -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- 頁尾全息狀態條 -->
+  <footer class="max-w-4xl mx-auto w-full mt-6 text-center text-xs text-slate-500">
+    <div class="border-t border-cyan-900/40 pt-3 flex justify-between items-center">
+      <span>SYSTEM STATUS: <span id="polling-indicator" class="text-cyan-400">ONLINE (2s)</span></span>
+      <span>SOLO SYSTEM v2.0 // TACTICAL BLUE</span>
+    </div>
+  </footer>
+
+  <script>
+    // 專案設定與 Google Apps Script URL
+    const SHEET_NAME = 'TelepathyData';
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzEU7yNQd9hzA2DewKQ-kB1EMJokhGEkMKEdvvpWM47claciLEjnJCkDCVED_hbQiTz/exec";
+
+    // 狀態變數
+    let currentRoom = "default";
+    let playerName = "";
+    let pollingTimer = null;
+    let localGameState = { status: "setup", question: "", answers: {} };
+
+    // DOM 元素引用
+    const setupScreen = document.getElementById('setup-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const hostPanel = document.getElementById('host-panel');
+    const toggleHostBtn = document.getElementById('toggle-host-btn');
+    const copyLinkBtn = document.getElementById('copy-link-btn');
+    
+    const playerNameInput = document.getElementById('player-name-input');
+    const roomCodeInput = document.getElementById('room-code-input');
+    const joinBtn = document.getElementById('join-btn');
+    const displayRoomCode = document.getElementById('display-room-code');
+
+    const questionInput = document.getElementById('question-input');
+    const sendQuestionBtn = document.getElementById('send-question-btn');
+    const revealBtn = document.getElementById('reveal-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const playerCountBadge = document.getElementById('player-count-badge');
+
+    const currentQuestionText = document.getElementById('current-question-text');
+    const userAnswerInput = document.getElementById('user-answer-input');
+    const submitAnswerBtn = document.getElementById('submit-answer-btn');
+    const submitStatusMsg = document.getElementById('submit-status-msg');
+    const cardsContainer = document.getElementById('cards-container');
+    const gameStatusTag = document.getElementById('game-status-tag');
+
+    // 初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      
+      // 自動抓取 URL 中的 room 參數
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        roomCodeInput.value = roomParam;
+      }
+
+      // 綁定事件 Listeners
+      joinBtn.addEventListener('click', enterRoom);
+      toggleHostBtn.addEventListener('click', () => hostPanel.classList.toggle('hidden'));
+      copyLinkBtn.addEventListener('click', copyRoomLink);
+      sendQuestionBtn.addEventListener('click', handleSetQuestion);
+      submitAnswerBtn.addEventListener('click', handleSubmitAnswer);
+      revealBtn.addEventListener('click', handleReveal);
+      resetBtn.addEventListener('click', handleReset);
+    });
+
+    // 進入房間
+    function enterRoom() {
+      const name = playerNameInput.value.trim();
+      const room = roomCodeInput.value.trim();
+
+      if (!name || !room) {
+        alert('請填寫暱稱與房間代碼');
+        return;
+      }
+
+      playerName = name;
+      currentRoom = room;
+      displayRoomCode.textContent = currentRoom;
+
+      setupScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+
+      // 啟動定時輪詢 (Polling: 2秒一次)
+      fetchRoomData();
+      pollingTimer = setInterval(fetchRoomData, 2000);
+    }
+
+    // 複製房間連結
+    function copyRoomLink() {
+      const url = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(currentRoom)}`;
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`房間連結已複製：\n${url}`);
+      });
+    }
+
+    // 抓取房間狀態 (GET)
+    async function fetchRoomData() {
+      try {
+        const response = await fetch(`${GAS_API_URL}?room=${encodeURIComponent(currentRoom)}`);
+        const data = await response.json();
+        
+        localGameState = data;
+        renderUI();
+      } catch (error) {
+        console.error("Fetch room data failed:", error);
+      }
+    }
+
+    // 更新 GAS 狀態 (POST)
+    async function postGASAction(payload) {
+      try {
+        await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ room: currentRoom, ...payload })
+        });
+        fetchRoomData();
+      } catch (error) {
+        console.error("POST action failed:", error);
+      }
+    }
+
+    // 房主發布題目
+    function handleSetQuestion() {
+      const q = questionInput.value.trim();
+      if (!q) return;
+      postGASAction({ action: "set_question", question: q });
+      questionInput.value = "";
+    }
+
+    // 玩家提交答案
+    function handleSubmitAnswer() {
+      const ans = userAnswerInput.value.trim();
+      if (!ans) return;
+      postGASAction({ action: "submit_answer", playerName: playerName, answer: ans });
+      submitStatusMsg.classList.remove('hidden');
+    }
+
+    // 房主開牌
+    function handleReveal() {
+      postGASAction({ action: "reveal" });
+    }
+
+    // 房主重置
+    function handleReset() {
+      postGASAction({ action: "reset" });
+      userAnswerInput.value = "";
+      submitStatusMsg.classList.add('hidden');
+    }
+
+    // 渲染 UI 畫面
+    function renderUI() {
+      const { status, question, answers } = localGameState;
+
+      // 1. 題目
+      if (question) {
+        currentQuestionText.textContent = question;
+      } else {
+        currentQuestionText.innerHTML = `<span class="text-slate-500 text-base italic">-- 等待房主發布任務題目 --</span>`;
+      }
+
+      // 2. 狀態標籤與計數
+      const answersArr = Object.entries(answers || {});
+      playerCountBadge.textContent = `已送出答案: ${answersArr.length} 人`;
+      gameStatusTag.textContent = status.toUpperCase();
+
+      // 3. 渲染 3D 卡片陣列
+      cardsContainer.innerHTML = "";
+
+      if (answersArr.length === 0) {
+        cardsContainer.innerHTML = `
+          <div class="col-span-full text-center py-8 text-xs text-slate-500">
+            [尚未有玩家提交答案]
+          </div>
+        `;
+        return;
+      }
+
+      // 計算統計相同的答案 (用於匹配亮燈)
+      const answerCounts = {};
+      answersArr.forEach(([_, ans]) => {
+        answerCounts[ans] = (answerCounts[ans] || 0) + 1;
+      });
+
+      answersArr.forEach(([pName, ans]) => {
+        const isFlipped = (status === "revealed");
+        const isMatch = isFlipped && answerCounts[ans] > 1;
+
+        const cardElement = document.createElement('div');
+        cardElement.className = "h-32 perspective-1000";
+
+        cardElement.innerHTML = `
+          <div class="card-inner ${isFlipped ? 'flipped' : ''}">
+            <!-- 卡片正面 (未揭曉狀態) -->
+            <div class="card-front solo-holo-box flex flex-col justify-between p-3 bg-slate-950 border-cyan-500/40">
+              <div class="flex justify-between items-center text-xs text-cyan-400">
+                <span class="font-bold">${pName}</span>
+                <i data-lucide="lock" class="w-3.5 h-3.5 text-cyan-500/60"></i>
+              </div>
+              <div class="text-center text-xs text-slate-400 tracking-wider">
+                [READY]
+              </div>
+              <div class="text-[10px] text-right text-cyan-500/40 font-mono">
+                HIDDEN
+              </div>
+            </div>
+
+            <!-- 卡片背面 (揭曉答案) -->
+            <div class="card-back solo-holo-box flex flex-col justify-between p-3 ${isMatch ? 'border-cyan-400 bg-cyan-950/60 shadow-[0_0_20px_rgba(0,240,255,0.5)]' : 'border-slate-700 bg-slate-950'}">
+              <div class="flex justify-between items-center text-xs text-cyan-300">
+                <span class="font-bold">${pName}</span>
+                ${isMatch ? '<span class="text-[10px] bg-cyan-400 text-slate-950 px-1 font-bold">MATCH!</span>' : ''}
+              </div>
+              <div class="text-center font-bold text-base md:text-lg text-slate-100 px-1 truncate">
+                ${ans}
+              </div>
+              <div class="text-[10px] text-right ${isMatch ? 'text-cyan-300' : 'text-slate-500'}">
+                REVEALED
+              </div>
+            </div>
+          </div>
+        `;
+
+        cardsContainer.appendChild(cardElement);
+      });
+
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
